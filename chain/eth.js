@@ -3,11 +3,16 @@ var Web3=require('web3')
 var web3=new Web3(Web3.givenProvider||'http://47.106.68.245:8999');
 const contractAbi=require('./index').contractAbi;
 const weiUnit=require('./index').ethUnit;
+const allcode=require('./../service/resultCode')
 //根据合约地址获取contract对象,通过该对象可以获取对应合约信息
 const getMyContract=function(contract){
     let conobj=new web3.eth.Contract(contractAbi,contract);
     return conobj;
 };
+//错误消息返回
+const wrapEror=function (err) {
+    return {code:err.code,message:err.message};
+}
 //根据合于实力获取代币信息
 const getTokenInfo=function(contract,address){
     return new Promise((resolve,reject)=>{
@@ -30,7 +35,13 @@ module.exports={
     },
     //查询余额
     getBalance:async  (params,callback)=> {
+        var error;//错误提示消息
         var address=params.address;
+        //判断共要地址是否有效
+        if(!web3.utils.isAddress(address)){
+            error=wrapEror(allcode["INVALID_ADDRESS"]);
+            callback(error)
+        }
         //获取以太坊余额
         var baseValue=await web3.eth.getBalance(address);
         //根据余额做单位处理
