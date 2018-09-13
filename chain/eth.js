@@ -39,8 +39,9 @@ module.exports={
         var address=params.address;
         //判断共要地址是否有效
         if(!web3.utils.isAddress(address)){
+            logger.error(`getBalance公钥地址：${address},合约地址：${params.tokens}`)
             error=wrapEror(allcode["INVALID_ADDRESS"]);
-            callback(error)
+            return callback(error);
         }
         //获取以太坊余额
         var baseValue=await web3.eth.getBalance(address);
