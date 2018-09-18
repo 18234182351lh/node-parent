@@ -3,6 +3,7 @@ var app = express();
 //添加rpc使用
 var jayson=require('jayson')
 var bodyParser = require('body-parser');
+var mongoose=require('mongoose');
 //日志管理 设置全局变量 全局引用
 global.logger=require('./plugins/logHelper').logger;
 const eth=require('./chain/eth')
@@ -12,11 +13,19 @@ app.use(bodyParser.json()); // for parsing application/json
 // app.use(express.static('download'));
 var server=jayson.server(eth);
 app.use('/port',server.middleware());
-const tServer=app.listen(8081,function () {
-    logger.info("应用实例，访问地址为localhost:"+tServer.address().port);
-    /*logger.trace('Entering cheese testing');
-    logger.info('Cheese is Comté.');
-    logger.warn('Cheese is quite smelly.');
-    logger.error('Cheese is too ripe!');
-    logger.fatal('Cheese was breeding ground for listeria.');*/
-})
+mongoose.connect('mongodb://localhost:27011/eth',{useNewUrlParser:true},function (err) {
+    if(err){
+        logger.error('数据库链接失败！');
+    }else {
+        const tServer=app.listen(8081,function () {
+            logger.info("应用实例，访问地址为localhost:"+tServer.address().port);
+            // eth.getAllCoins()
+            /*logger.trace('Entering cheese testing');
+            logger.info('Cheese is Comté.');
+            logger.warn('Cheese is quite smelly.');
+            logger.error('Cheese is too ripe!');
+            logger.fatal('Cheese was breeding ground for listeria.');*/
+        })
+    }
+});
+

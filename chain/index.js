@@ -1,3 +1,55 @@
+var contractAbi_=[
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_from",
+                "type": "address"
+            },
+            {
+                "name": "_to",
+                "type": "address"
+            },
+            {
+                "name": "_value",
+                "type": "uint256"
+            }
+        ],
+        "name": "transferFrom",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_to",
+                "type": "address"
+            },
+            {
+                "name": "_value",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+];
 var contractAbi = [
     {
         "constant": true,
@@ -475,10 +527,6 @@ const ethUnit={
 // exports.contractAbi=contractAbi;
 module.exports={
     "contractAbi":contractAbi,
-    "ethUnit":ethUnit
+    "ethUnit":ethUnit,
+    "contractAbi_":contractAbi_
 }
-/*
-export default {
-    contractAbi,
-    ethUnit
-}*/

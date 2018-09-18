@@ -5,5 +5,8 @@
  */
 module.exports={
     //参数非法
-    INVALID_ADDRESS:{code:4096,message:"地址无效！"}
+    INVALID_ADDRESS:{code:4096,message:"地址无效！"},
+    LOSS_HASH:{code:4096,message:"hash不可为空！"},
+    //区块链查询报错
+    NOT_REQUIRED_TRANSITION:{code:12289,message:"不是ERC20交易！"}
 }
