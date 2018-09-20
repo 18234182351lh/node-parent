@@ -46,14 +46,50 @@ const parseInput=function(data){
     var results = new Canoe.decodeConstructorArgs(name_, contractAbi_,  data.substring(10));
     return results;
 }
-//获取币种信息
-let getCoins=function(transInfo){
-    Coin.findOne({
-        currency:transInfo.currency
-    }).then(function (err,coins) {
-        console.log("结果")
-        console.log(coins)
+//币种和交易入库
+let saveDate=function(transInfo){
+    return new Promise((resolve, reject) => {
+        let error;
+        Coins.findOne({
+            currency:transInfo.currency
+        }).then(function (coins) {
+            if(coins){
+                return coins;
+            }else {
+                var coins_=new Coins({
+                    name:transInfo.name,
+                    currency:transInfo.currency,
+                    tokens:transInfo.token,
+                    baseCoin:transInfo.currency=="ETH"?true:false
+                });
+                return coins_.save();
+            }
+        }).then(function (coins) {
+            if(coins){
+                let transitionRecord_=new transitionRecord({
+                    hash:transInfo.hash,
+                    from:transInfo.from,
+                    to:transInfo.to,
+                    amount:transInfo.value,
+                    gas:transInfo.gas,
+                    gasPrice:transInfo.gasPrice,
+                    transferTime:transInfo.transferTime,
+                    coin_id:coins._id,
+                    blockNumber:transInfo.blockNumber
+                });
+                return transitionRecord_.save();
+            }else {
+                logger.warn(`${transInfo.hash}币种保存失败！`);
+                error="保存数据失败！";
+                return error;
+            }
+        }).then(function (transInfo) {
+            logger.info(`${transInfo.hash}交易记录保存成功！`);
+            resolve(transInfo) ;
+        })
     })
+
+
 }
 module.exports={
     //根据币种信息 存储数据
@@ -75,7 +111,7 @@ module.exports={
             }
         }).then(function (coins) {
             console.log("结果");
-            console.log(coins)
+            console.log(coins);
         })
     },
     //  获取所有交易hash 通过hash获取币种信息
@@ -100,10 +136,9 @@ module.exports={
             transitions=transitions.concat(curTransitionInfo.transactions);
         }
         let getInfos=[];
-        console.log("所有hash");
-        console.log(transitions.length);
         for(var i=0;i<transitions.length;i++){
             let curInfo=await web3.eth.getTransaction(transitions[i]);
+
             getInfos.push(curInfo)
         }
         let result;
@@ -112,6 +147,9 @@ module.exports={
         for(let i=0;i<getInfos.length;i++){
             if(getInfos[i].to){
                 const toData=await web3.eth.getCode(getInfos[i].to);
+                const times=await web3.eth.getBlock(getInfos[i].blockNumber);
+                const theTimes=times.timestamp*1000+8*60*60*1000;
+                getInfos[i].transferTime=theTimes;
                 if(toData.toUpperCase()=="0X"){
                     result=getInfos[i];
                     result.value=web3.utils.fromWei(result.value, 'ether');
@@ -142,8 +180,10 @@ module.exports={
                 logger.info(`${getInfos[i].hash}创建规则`);
             }
         }
+        // console.log(allTransInfos.slice(0,2));
+        let curr;
         for(let i=0;i<allTransInfos.length;i++){
-            await getCoins(allTransInfos[i]);
+            curr=await saveDate(allTransInfos[i]);
         }
 
     },
