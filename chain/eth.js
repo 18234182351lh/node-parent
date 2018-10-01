@@ -34,6 +34,7 @@ const getTokenInfo=function(contract,address){
         })
     })
 };
+
 //解析input
 const parseInput=function(data){
     var functionName = "transfer(address _to, uint256 _value)";
@@ -118,74 +119,74 @@ module.exports={
     getAllCoins:async (params,callback)=>{
         const blockNum=await web3.eth.getBlockNumber();//获取总块数
         let transitions=[];
-        let curTransitionInfo=null,num=0;
-        /*私链
+        let curTransitionInfo=null,num=6346759;
+        let getInfos=[];
+        let curInfo;
+        let result;
+        let allTransInfos=[];
+        let sum=0;
         do{
             curTransitionInfo=await web3.eth.getBlock(num);
             num+=1;
-            console.log("数据");
-            console.log(curTransitionInfo)
+            sum+=parseInt(curTransitionInfo.transactions.length);
             if(curTransitionInfo.transactions.length>0){
-
-                transitions=transitions.concat(curTransitionInfo.transactions);
+                // transitions=transitions.concat(curTransitionInfo.transactions);
+                transitions=curTransitionInfo.transactions;
             }
-        }while (curTransitionInfo)*/
-        //以太坊公链
-        curTransitionInfo=await web3.eth.getBlock(6346760);
-        if(curTransitionInfo.transactions.length>0){
-            transitions=transitions.concat(curTransitionInfo.transactions);
-        }
-        let getInfos=[];
-        for(var i=0;i<transitions.length;i++){
-            let curInfo=await web3.eth.getTransaction(transitions[i]);
-
-            getInfos.push(curInfo)
-        }
-        let result;
-        let allTransInfos=[];
-
-        for(let i=0;i<getInfos.length;i++){
-            if(getInfos[i].to){
-                const toData=await web3.eth.getCode(getInfos[i].to);
-                const times=await web3.eth.getBlock(getInfos[i].blockNumber);
-                const theTimes=times.timestamp*1000+8*60*60*1000;
-                getInfos[i].transferTime=theTimes;
-                if(toData.toUpperCase()=="0X"){
-                    result=getInfos[i];
-                    result.value=web3.utils.fromWei(result.value, 'ether');
-                    result.gasPrice=web3.utils.fromWei(result.gasPrice, 'ether');
-                    result.name="ETH";
-                    result.currency="ETH";
-                    allTransInfos.push(result);
-                }else{
-                    let receiptInfo=await web3.eth.getTransactionReceipt(getInfos[i].hash);
-                    if(receiptInfo.logs.length==1&&receiptInfo.logs[0].topics.length==3){
+            getInfos=[];
+            for(var i=0;i<transitions.length;i++){
+                curInfo=await web3.eth.getTransaction(transitions[i]);
+                getInfos.push(curInfo)
+            }
+            allTransInfos=[];
+            for(let i=0;i<getInfos.length;i++){
+                if(getInfos[i].to){
+                    const toData=await web3.eth.getCode(getInfos[i].to);
+                    const times=await web3.eth.getBlock(getInfos[i].blockNumber);
+                    const theTimes=times.timestamp*1000+8*60*60*1000;
+                    getInfos[i].transferTime=theTimes;
+                    if(toData.toUpperCase()=="0X"){
+                        logger.info(`${getInfos[i].hash}基础币交易！`);
                         result=getInfos[i];
-                        result.from=result.from.toLowerCase();
-                        result.token=receiptInfo.to;
-                        result.to=receiptInfo.logs[0].topics[2].replace("000000000000000000000000","")
-                        let myContranct=await getMyContract(receiptInfo.to);
-                        result.name=await myContranct.methods.name().call();
-                        result.currency=await myContranct.methods.symbol().call();
-                        result.value=web3.utils.hexToNumberString(receiptInfo.logs[0].data);
-                        result.value=web3.utils.fromWei(result.value,weiUnit[result.decimals]);
-                        result.gasPrice=web3.utils.fromWei(result.gasPrice,weiUnit[result.decimals]);
+                        result.value=web3.utils.fromWei(result.value, 'ether');
+                        result.gasPrice=web3.utils.fromWei(result.gasPrice, 'ether');
+                        result.name="ETH";
+                        result.currency="ETH";
                         allTransInfos.push(result);
-                    }else {
-                        logger.info(`${getInfos[i].hash}不是所需的ERC20交易！`);
+
+                    }else{
+
+                        let receiptInfo=await web3.eth.getTransactionReceipt(getInfos[i].hash);
+                        if(receiptInfo.logs.length==1&&receiptInfo.logs[0].topics.length==3){
+                            console.log(getInfos[i])
+                            result=getInfos[i];
+                            result.from=result.from.toLowerCase();
+                            result.token=receiptInfo.to;
+                            result.to=receiptInfo.logs[0].topics[2].replace("000000000000000000000000","");
+                            console.log("合约地址",result.token)
+                            let myContranct=await getMyContract(result.token);
+                            result.name=await myContranct.methods.name().call();
+                            result.currency=await myContranct.methods.symbol().call();
+                            result.decimals=await myContranct.methods.decimals().call();
+                            result.value=web3.utils.hexToNumberString(receiptInfo.logs[0].data);
+                            result.value=web3.utils.fromWei(result.value,weiUnit[result.decimals]);
+                            result.gasPrice=web3.utils.fromWei(result.gasPrice,weiUnit[result.decimals]);
+                            allTransInfos.push(result);
+                        }else {
+                            logger.info(`${getInfos[i].hash}不是所需的ERC20交易！`);
+                        }
                     }
+
+                }else {
+                    logger.info(`${getInfos[i].hash}创建规则`);
                 }
-
-            }else {
-                logger.info(`${getInfos[i].hash}创建规则`);
             }
-        }
-        // console.log(allTransInfos.slice(0,2));
-        let curr;
-        for(let i=0;i<allTransInfos.length;i++){
-            curr=await saveDate(allTransInfos[i]);
-        }
-
+            for(let i=0;i<allTransInfos.length;i++){
+                await saveDate(allTransInfos[i]);
+            }
+            logger.warn(`总和${num}`)
+            logger.warn(`长度${transitions.length}`)
+        }while (num<6346761)
     },
     //根据hash获取交易记录 只获取ERC-20的交易记录
     getTransitionByHash:async (params,callback)=>{
@@ -248,12 +249,12 @@ module.exports={
                 result.from=result.from.toLowerCase();
                 result.token=receiptInfo.to;
                 result.to=receiptInfo.logs[0].topics[2].replace("000000000000000000000000","")
-                let myContranct=await getMyContract(receiptInfo.to);
-                result.name=await myContranct.methods.name().call();
-                result.currency=await myContranct.methods.symbol().call();
                 result.value=web3.utils.hexToNumberString(receiptInfo.logs[0].data);
-                result.value=web3.utils.fromWei(result.value,weiUnit[result.decimals]);
-                result.gasPrice=web3.utils.fromWei(result.gasPrice,weiUnit[result.decimals]);
+                let myContranct=getMyContract(receiptInfo.to);
+                result.currency=await myContranct.methods.symbol().call();
+                result.name=await myContranct.methods.name().call();
+                result.value=web3.utils.fromWei(result.value,weiUnit["18"]);
+                result.gasPrice=web3.utils.fromWei(result.gasPrice,weiUnit["18"]);
             }else {
                 error=wrapEror(allcode["NOT_REQUIRED_TRANSITION"]);
                 return callback(error);
